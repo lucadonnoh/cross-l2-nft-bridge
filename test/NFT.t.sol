@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {Test, console2} from "forge-std/Test.sol";
 import {NFT} from "src/NFT.sol";
 
-contract CounterTest is Test {
+contract NftTest is Test {
     NFT public nft;
     uint256 maxSupply;
 
@@ -39,6 +39,14 @@ contract CounterTest is Test {
             nft.mint(address(this));
         }
         vm.expectRevert("MAX_SUPPLY");
+        nft.mint(address(this));
+    }
+
+    function test_mintNotOwner() public {
+        address notOwner = makeAddr("notOwner");
+        vm.prank(notOwner);
+        bytes4 selector = bytes4(keccak256("OwnableUnauthorizedAccount(address)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, notOwner));
         nft.mint(address(this));
     }
 }
