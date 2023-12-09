@@ -5,10 +5,15 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 
 contract NFT is ERC721Enumerable, ERC721URIStorage {
-    constructor() ERC721("NFT", "NFT") {}
+    uint256 immutable MAX_SUPPLY;
+
+    constructor(uint256 maxSupply) ERC721("NFT", "NFT") {
+        MAX_SUPPLY = maxSupply;
+    }
 
     function mint(address to) public {
         uint256 ts = totalSupply();
+        require(ts < MAX_SUPPLY, "MAX_SUPPLY");
         _mint(to, ts + 1);
     }
 
