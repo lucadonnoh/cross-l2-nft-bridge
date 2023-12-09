@@ -1,3 +1,5 @@
+[![test](https://github.com/lucadonnoh/nft_borsa/actions/workflows/main.yml/badge.svg)](https://github.com/lucadonnoh/nft_borsa/actions/workflows/main.yml)
+
 ## Foundry
 
 **Foundry is a blazing fast, portable and modular toolkit for Ethereum application development written in Rust.**
