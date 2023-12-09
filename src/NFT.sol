@@ -3,15 +3,16 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract NFT is ERC721Enumerable, ERC721URIStorage {
+contract NFT is ERC721Enumerable, ERC721URIStorage, Ownable {
     uint256 public immutable MAX_SUPPLY;
 
-    constructor(uint256 maxSupply) ERC721("NFT", "NFT") {
+    constructor(uint256 maxSupply) ERC721("NFT", "NFT") Ownable(msg.sender) {
         MAX_SUPPLY = maxSupply;
     }
 
-    function mint(address to) public {
+    function mint(address to) public onlyOwner {
         uint256 ts = totalSupply();
         require(ts < MAX_SUPPLY, "MAX_SUPPLY");
         _mint(to, ts + 1);
