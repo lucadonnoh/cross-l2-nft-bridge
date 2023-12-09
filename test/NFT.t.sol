@@ -6,13 +6,39 @@ import {NFT} from "src/NFT.sol";
 
 contract CounterTest is Test {
     NFT public nft;
+    uint256 maxSupply;
 
     function setUp() public {
-        nft = new NFT();
+        maxSupply = 100;
+        nft = new NFT(maxSupply);
     }
 
-    function testMint() public {
+    function testFuzz_mint(uint256 amount) public {
+        for (uint256 i = 0; i < amount; i++) {
+            if (nft.totalSupply() >= maxSupply) {
+                vm.expectRevert("MAX_SUPPLY");
+                nft.mint(address(this));
+                return;
+            }
+            nft.mint(address(this));
+        }
+        assertEq(nft.totalSupply(), amount);
+        assertEq(nft.balanceOf(address(this)), amount);
+    }
+
+    function test_mint100() public {
+        for (uint256 i = 0; i < 100; i++) {
+            nft.mint(address(this));
+        }
+        assertEq(nft.totalSupply(), 100);
+        assertEq(nft.balanceOf(address(this)), 100);
+    }
+
+    function test_mint101() public {
+        for (uint256 i = 0; i < 100; i++) {
+            nft.mint(address(this));
+        }
+        vm.expectRevert("MAX_SUPPLY");
         nft.mint(address(this));
-        assertEq(nft.balanceOf(address(this)), 1);
     }
 }
