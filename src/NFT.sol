@@ -3,16 +3,24 @@ pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts/access/AccessControl.sol";
 
-contract NFT is ERC721Enumerable, ERC721URIStorage, Ownable {
+contract NFT is ERC721Enumerable, ERC721URIStorage, AccessControl {
     uint256 public immutable MAX_SUPPLY;
 
-    constructor(uint256 maxSupply) ERC721("NFT", "NFT") Ownable(msg.sender) {
+    bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
+
+    constructor(uint256 maxSupply) ERC721("NFT", "NFT") {
         MAX_SUPPLY = maxSupply;
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
     }
 
-    function mint(address to) public onlyOwner {
+    function addMinter(address account) public onlyRole(DEFAULT_ADMIN_ROLE) {
+        _grantRole(MINTER_ROLE, account);
+    }
+
+    function mint(address to) public onlyRole(MINTER_ROLE) {
         uint256 ts = totalSupply();
         require(ts < MAX_SUPPLY, "MAX_SUPPLY");
         _mint(to, ts + 1);
@@ -38,7 +46,7 @@ contract NFT is ERC721Enumerable, ERC721URIStorage, Ownable {
     function supportsInterface(bytes4 interfaceId)
         public
         view
-        override(ERC721URIStorage, ERC721Enumerable)
+        override(ERC721URIStorage, ERC721Enumerable, AccessControl)
         returns (bool)
     {
         return super.supportsInterface(interfaceId);
