@@ -58,4 +58,12 @@ contract NftTest is Test {
         assertEq(nft.totalSupply(), 1);
         assertEq(nft.balanceOf(address(this)), 1);
     }
+
+    function test_notDeployerCannotAddMinter() public {
+        address notDeployer = makeAddr("notDeployer");
+        vm.prank(notDeployer);
+        bytes4 selector = bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, notDeployer, 0x00));
+        nft.addMinter(notDeployer);
+    }
 }
