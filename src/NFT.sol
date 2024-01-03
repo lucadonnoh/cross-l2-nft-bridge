@@ -20,10 +20,11 @@ contract NFT is ERC721Enumerable, ERC721URIStorage, AccessControl {
         _grantRole(MINTER_ROLE, account);
     }
 
-    function mint(address to) public onlyRole(MINTER_ROLE) {
+    function mint(address to, string memory tokenUri) public onlyRole(MINTER_ROLE) {
         uint256 ts = totalSupply();
         require(ts < MAX_SUPPLY, "MAX_SUPPLY");
         _mint(to, ts + 1);
+        _setTokenURI(ts + 1, tokenUri);
     }
 
     function tokenURI(uint256 tokenId) public view override(ERC721URIStorage, ERC721) returns (string memory) {
