@@ -42,11 +42,28 @@ contract NftTest is Test {
         nft.mint(address(this));
     }
 
-    function test_mintNotOwner() public {
-        address notOwner = makeAddr("notOwner");
-        vm.prank(notOwner);
-        bytes4 selector = bytes4(keccak256("OwnableUnauthorizedAccount(address)"));
-        vm.expectRevert(abi.encodeWithSelector(selector, notOwner));
+    function test_mintNotDeployer() public {
+        address notDeployer = makeAddr("notDeployer");
+        vm.prank(notDeployer);
+        bytes4 selector = bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, notDeployer, keccak256("MINTER_ROLE")));
         nft.mint(address(this));
+    }
+
+    function test_addMinter() public {
+        address newMinter = makeAddr("newMinter");
+        nft.addMinter(newMinter);
+        vm.prank(newMinter);
+        nft.mint(address(this));
+        assertEq(nft.totalSupply(), 1);
+        assertEq(nft.balanceOf(address(this)), 1);
+    }
+
+    function test_notDeployerCannotAddMinter() public {
+        address notDeployer = makeAddr("notDeployer");
+        vm.prank(notDeployer);
+        bytes4 selector = bytes4(keccak256("AccessControlUnauthorizedAccount(address,bytes32)"));
+        vm.expectRevert(abi.encodeWithSelector(selector, notDeployer, 0x00));
+        nft.addMinter(notDeployer);
     }
 }
