@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
@@ -71,7 +71,7 @@ contract NftTest is Test {
 
     function testFuzz_tokenUri(string memory _uri) public {
         nft.mint(address(this), _uri);
-        assertEq(nft.tokenURI(1), _uri);
+        assertEq(nft.tokenURI(0), _uri);
     }
 
     function test_supportsInterface() public {
@@ -108,8 +108,8 @@ contract NftHarnessTest is Test {
 
     function test_update(address _to) public {
         nft.mint(address(this), "uri");
-        assertEq(nft.ownerOf(1), address(this));
-        nft.exposed_update(_to, 1, address(this));
-        assertEq(nft.ownerOf(1), _to);
+        assertEq(nft.ownerOf(0), address(this));
+        nft.exposed_update(_to, 0, address(this));
+        assertEq(nft.ownerOf(0), _to);
     }
 }
