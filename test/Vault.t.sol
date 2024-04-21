@@ -2,8 +2,9 @@
 pragma solidity ^0.8.13;
 
 import {Test, console2} from "forge-std/Test.sol";
-import {NFT} from "src/NFT.sol";
-import {NftVault} from "src/Vault.sol";
+import {NFT} from "src/L2/NFT.sol";
+import {NftVault} from "src/L2/Vault.sol";
+import {IHub} from "./../src/L1/IHub.sol";
 
 contract VaultTest is Test {
     NFT public nft;
@@ -11,7 +12,7 @@ contract VaultTest is Test {
 
     function setUp() public {
         nft = new NFT(100);
-        vaults = new NftVault(address(nft));
+        vaults = new NftVault(address(nft), IHub(address(0))); //TODO: add real hub
     }
 
     function test_flow() public {
@@ -24,7 +25,7 @@ contract VaultTest is Test {
         vm.stopPrank();
         assertEq(nft.ownerOf(0), address(vaults));
 
-        (address owner, address unlocker) = vaults.vaults(0);
+        (address owner, address unlocker,) = vaults.vaults(0);
         assertEq(owner, bob);
         assertEq(unlocker, eve);
 
