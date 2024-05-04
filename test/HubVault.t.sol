@@ -8,7 +8,7 @@ import {Hub} from "./../src/L1/Hub.sol";
 import {IVault} from "./../src/L2/IVault.sol";
 import {ICrossDomainMessenger} from "./../src/L1/Hub.sol";
 
-contract VaultTest is Test {
+contract HubVaultTest is Test {
     NFT public nft;
     NftVault public vaults;
     Hub public hub;
@@ -26,6 +26,17 @@ contract VaultTest is Test {
         nft = new NFT(100);
         vaults = new NftVault(address(nft));
         hub = new Hub(IVault(address(vaults)), ICrossDomainMessenger(mockL1Messenger), msg.sender);
+        vaults.setHubAddress(address(hub));
+    }
+
+    function testSetHubAddressAlreadySet() public {
+        vm.expectRevert("ALREADY_SET");
+        vaults.setHubAddress(address(hub));
+    }
+
+    function testSetHubNotOwner() public {
+        vm.expectRevert("ONLY_OWNER");
+        vm.prank(makeAddr("eve"));
         vaults.setHubAddress(address(hub));
     }
 
@@ -47,5 +58,48 @@ contract VaultTest is Test {
         assertEq(owner, bob);
         assertEq(unlocker, address(hub));
         assertEq(isRelayedToL1, true);
+    }
+
+    function testInitiateBridgeLockWithoutDeposit() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.expectRevert("NOT_LOCKED");
+        vaults.initiateBridgeLock(0, 1_000_000);
+    }
+
+    function testInitiateBridgeLockAlreadyRelayed() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.deposit(0, address(hub));
+        vm.mockCall(address(mockL2Messenger), abi.encodeWithSelector(mockL2Messenger.sendMessage.selector), bytes(""));
+        vaults.initiateBridgeLock(0, 1_000_000);
+        vm.expectRevert("ALREADY_RELAYED");
+        vaults.initiateBridgeLock(0, 1_000_000);
+        vm.stopPrank();
+    }
+
+    function testInitiateBridgeLockNotOwner() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.deposit(0, address(hub));
+        vm.stopPrank();
+        vm.prank(makeAddr("eve"));
+        vm.expectRevert("NOT_OWNER");
+        vaults.initiateBridgeLock(0, 1_000_000);
+    }
+
+    function testInitiateBridgeLockHubNotUnlocker() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.deposit(0, makeAddr("eve"));
+        vm.expectRevert("HUB_NOT_UNLOCKER");
+        vaults.initiateBridgeLock(0, 1_000_000);
+        vm.stopPrank();
     }
 }

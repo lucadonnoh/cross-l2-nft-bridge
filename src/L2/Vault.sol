@@ -49,13 +49,13 @@ contract NftVault {
     }
 
     function isLocked(uint256 _tokenId) public view returns (bool) {
-        return vaults[_tokenId].unlocker != address(0);
+        return NFT.ownerOf(_tokenId) == address(this);
     }
 
     function initiateBridgeLock(uint256 _tokenId, uint32 _minGasLimit) public {
         require(isLocked(_tokenId), "NOT_LOCKED");
         require(!vaults[_tokenId].relayedToL1, "ALREADY_RELAYED");
-        require(NFT.ownerOf(_tokenId) == address(this), "NOT_OWNER");
+        require(vaults[_tokenId].owner == msg.sender, "NOT_OWNER");
         require(vaults[_tokenId].unlocker == address(L1Hub), "HUB_NOT_UNLOCKER");
         vaults[_tokenId].relayedToL1 = true;
         IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).sendMessage({
