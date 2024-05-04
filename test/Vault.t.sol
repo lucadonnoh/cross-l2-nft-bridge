@@ -68,4 +68,24 @@ contract VaultTest is Test {
         vm.expectRevert("NOT_UNLOCKER");
         vaults.withdraw(0);
     }
+
+    function test_isLocked() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        assertEq(vaults.isLocked(0), false);
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.deposit(0, makeAddr("eve"));
+        vm.stopPrank();
+        assertEq(vaults.isLocked(0), true);
+    }
+
+    function test_isLockedWhenJustTransferred() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        assertEq(vaults.isLocked(0), false);
+        vm.prank(bob);
+        nft.transferFrom(bob, address(vaults), 0);
+        assertEq(vaults.isLocked(0), false);
+    }
 }
