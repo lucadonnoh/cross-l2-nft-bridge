@@ -25,7 +25,7 @@ contract HubVaultTest is Test {
     function setUp() public {
         nft = new NFT(100);
         vaults = new NftVault(address(nft));
-        hub = new Hub(IVault(address(vaults)), ICrossDomainMessenger(MOCK_L1_MESSENGER), msg.sender);
+        hub = new Hub(IVault(address(vaults)), ICrossDomainMessenger(MOCK_L1_MESSENGER), makeAddr("unlocker"));
         vaults.setHubAddress(address(hub));
     }
 
@@ -188,17 +188,17 @@ contract HubVaultTest is Test {
         );
 
         vm.prank(address(MOCK_L1_MESSENGER));
-        hub.finalizeBridgedLock(0);
+        hub.finalizeBridgeLock(0);
 
         assertEq(hub.isLocked(0), true);
     }
 
     function test_finalizeBridgedLockCallerNotMessenger() public {
         vm.expectRevert("ONLY_MESSENGER");
-        hub.finalizeBridgedLock(0);
+        hub.finalizeBridgeLock(0);
     }
 
-    function test_finalizeBridgedLockSenderNotVault() public {
+    function test_finalizeBridgeLockSenderNotVault() public {
         vm.mockCall(
             address(MOCK_L1_MESSENGER),
             abi.encodeWithSelector(MOCK_L1_MESSENGER.xDomainMessageSender.selector),
@@ -207,6 +207,46 @@ contract HubVaultTest is Test {
 
         vm.expectRevert("INVALID_SENDER");
         vm.prank(address(MOCK_L1_MESSENGER));
-        hub.finalizeBridgedLock(0);
+        hub.finalizeBridgeLock(0);
+    }
+
+    function test_initiateBridgeUnlock() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.mockCall(
+            address(MOCK_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_L1_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(vaults))
+        );
+        vm.prank(address(MOCK_L1_MESSENGER));
+        hub.finalizeBridgeLock(0);
+
+        vm.mockCall(
+            address(MOCK_L1_MESSENGER), abi.encodeWithSelector(MOCK_L1_MESSENGER.sendMessage.selector), bytes("")
+        );
+        vm.prank(makeAddr("unlocker"));
+        hub.initiateBridgeUnlock(0, 1_000_000);
+    }
+
+    function test_initiateBridgeUnlockNotUnlocker() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.mockCall(
+            address(MOCK_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_L1_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(vaults))
+        );
+        vm.prank(address(MOCK_L1_MESSENGER));
+        hub.finalizeBridgeLock(0);
+
+        vm.expectRevert("ONLY_UNLOCKER");
+        vm.prank(makeAddr("eve"));
+        hub.initiateBridgeUnlock(0, 1_000_000);
+    }
+
+    function test_initiateBridgeUnlockNotLocked() public {
+        vm.expectRevert("NOT_LOCKED");
+        vm.prank(makeAddr("unlocker"));
+        hub.initiateBridgeUnlock(0, 1_000_000);
     }
 }

@@ -21,13 +21,13 @@ contract Hub {
         UNLOCKER = _unlocker;
     }
 
-    function finalizeBridgedLock(uint256 tokenId) public {
+    function finalizeBridgeLock(uint256 tokenId) public {
         require(msg.sender == address(MESSENGER), "ONLY_MESSENGER");
         require(MESSENGER.xDomainMessageSender() == address(REMOTE_VAULT), "INVALID_SENDER");
         isLocked[tokenId] = true;
     }
 
-    function initiateBridgedUnlock(uint256 tokenId, uint32 _minGasLimit) public {
+    function initiateBridgeUnlock(uint256 tokenId, uint32 _minGasLimit) public {
         require(msg.sender == UNLOCKER, "ONLY_UNLOCKER");
         require(isLocked[tokenId], "NOT_LOCKED");
         ICrossDomainMessenger(MESSENGER).sendMessage({
@@ -35,5 +35,6 @@ contract Hub {
             _message: abi.encodeWithSignature("finalizeBridgeUnlock(uint256)", tokenId),
             _minGasLimit: _minGasLimit
         });
+        isLocked[tokenId] = false;
     }
 }
