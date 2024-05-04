@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "src/L1/IHub.sol";
-import "src/libraries/Predeploys.sol";
+import "./../L1/IHub.sol";
+import "./../libraries/Predeploys.sol";
 import "./IL2CrossDomainMessenger.sol";
 
 contract NftVault {
@@ -19,9 +19,8 @@ contract NftVault {
 
     mapping(uint256 => Vault) public vaults;
 
-    constructor(address _nft, IHub _hub) {
+    constructor(address _nft) {
         NFT = ERC721(_nft);
-        L1Hub = _hub;
         OWNER = msg.sender;
     }
 
@@ -31,6 +30,7 @@ contract NftVault {
     }
 
     function setHubAddress(address hubAddress) external onlyOwner {
+        require(address(L1Hub) == address(0), "ALREADY_SET");
         L1Hub = IHub(hubAddress);
     }
 
@@ -56,6 +56,7 @@ contract NftVault {
         require(isLocked(_tokenId), "NOT_LOCKED");
         require(!vaults[_tokenId].relayedToL1, "ALREADY_RELAYED");
         require(NFT.ownerOf(_tokenId) == address(this), "NOT_OWNER");
+        require(vaults[_tokenId].unlocker == address(L1Hub), "HUB_NOT_UNLOCKER");
         vaults[_tokenId].relayedToL1 = true;
         IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).sendMessage({
             _target: address(L1Hub),

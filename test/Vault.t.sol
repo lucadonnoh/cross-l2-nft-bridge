@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {NFT} from "src/L2/NFT.sol";
 import {NftVault} from "src/L2/Vault.sol";
-import {IHub} from "./../src/L1/IHub.sol";
 
 contract VaultTest is Test {
     NFT public nft;
@@ -12,7 +11,7 @@ contract VaultTest is Test {
 
     function setUp() public {
         nft = new NFT(100);
-        vaults = new NftVault(address(nft), IHub(address(0))); //TODO: add real hub
+        vaults = new NftVault(address(nft)); //TODO: add real hub
     }
 
     function test_flow() public {
