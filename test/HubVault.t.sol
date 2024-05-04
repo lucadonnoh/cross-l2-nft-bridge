@@ -177,4 +177,36 @@ contract HubVaultTest is Test {
         vm.expectRevert("ONLY_L1_HUB");
         vaults.finalizeBridgeUnlock(0);
     }
+
+    function test_finalizeBridgedLock() public {
+        assertEq(hub.isLocked(0), false);
+
+        vm.mockCall(
+            address(MOCK_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_L1_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(vaults))
+        );
+
+        vm.prank(address(MOCK_L1_MESSENGER));
+        hub.finalizeBridgedLock(0);
+
+        assertEq(hub.isLocked(0), true);
+    }
+
+    function test_finalizeBridgedLockCallerNotMessenger() public {
+        vm.expectRevert("ONLY_MESSENGER");
+        hub.finalizeBridgedLock(0);
+    }
+
+    function test_finalizeBridgedLockSenderNotVault() public {
+        vm.mockCall(
+            address(MOCK_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_L1_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(makeAddr("eve"))
+        );
+
+        vm.expectRevert("INVALID_SENDER");
+        vm.prank(address(MOCK_L1_MESSENGER));
+        hub.finalizeBridgedLock(0);
+    }
 }
