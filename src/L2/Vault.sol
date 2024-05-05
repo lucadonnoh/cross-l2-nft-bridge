@@ -60,7 +60,7 @@ contract NftVault {
         vaults[_tokenId].relayedToL1 = true;
         IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).sendMessage({
             _target: address(L1Hub),
-            _message: abi.encodeWithSelector(L1Hub.finalizeBridgedLock.selector, _tokenId),
+            _message: abi.encodeWithSelector(L1Hub.finalizeBridgeLock.selector, _tokenId),
             _minGasLimit: _minGasLimit
         });
     }
