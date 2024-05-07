@@ -25,10 +25,11 @@ contract Hub {
         require(msg.sender == address(MESSENGER), "ONLY_MESSENGER");
         require(MESSENGER.xDomainMessageSender() == address(REMOTE_VAULT), "INVALID_SENDER");
         isLocked[tokenId] = true;
+        // call to other-L2 application
     }
 
     function initiateBridgeUnlock(uint256 tokenId, uint32 _minGasLimit) public {
-        require(msg.sender == UNLOCKER, "ONLY_UNLOCKER");
+        require(msg.sender == UNLOCKER, "ONLY_UNLOCKER"); // the UNLOCKER should be the other-L2 application
         require(isLocked[tokenId], "NOT_LOCKED");
         ICrossDomainMessenger(MESSENGER).sendMessage({
             _target: address(REMOTE_VAULT),
