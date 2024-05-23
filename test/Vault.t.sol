@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {NFT} from "src/NFT.sol";
-import {NftVault} from "src/Vault.sol";
+import {Test} from "forge-std/Test.sol";
+import {NFT} from "src/L2/NFT.sol";
+import {NftVault} from "src/L2/Vault.sol";
 
 contract VaultTest is Test {
     NFT public nft;
@@ -11,7 +11,7 @@ contract VaultTest is Test {
 
     function setUp() public {
         nft = new NFT(100);
-        vaults = new NftVault(address(nft));
+        vaults = new NftVault(address(nft)); //TODO: add real hub
     }
 
     function test_flow() public {
@@ -24,7 +24,7 @@ contract VaultTest is Test {
         vm.stopPrank();
         assertEq(nft.ownerOf(0), address(vaults));
 
-        (address owner, address unlocker) = vaults.vaults(0);
+        (address owner, address unlocker,) = vaults.vaults(0);
         assertEq(owner, bob);
         assertEq(unlocker, eve);
 
@@ -67,5 +67,25 @@ contract VaultTest is Test {
         vm.prank(bob);
         vm.expectRevert("NOT_UNLOCKER");
         vaults.withdraw(0);
+    }
+
+    function test_isLocked() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        assertEq(vaults.isLocked(0), false);
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.deposit(0, makeAddr("eve"));
+        vm.stopPrank();
+        assertEq(vaults.isLocked(0), true);
+    }
+
+    function test_isLockedWhenJustTransferred() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        assertEq(vaults.isLocked(0), false);
+        vm.prank(bob);
+        nft.transferFrom(bob, address(vaults), 0);
+        assertEq(vaults.isLocked(0), false);
     }
 }

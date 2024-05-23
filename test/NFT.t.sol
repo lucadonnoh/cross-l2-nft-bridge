@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {Test, console2} from "forge-std/Test.sol";
-import {NFT} from "src/NFT.sol";
+import {Test} from "forge-std/Test.sol";
+import {NFT} from "src/L2/NFT.sol";
 
 contract NftTest is Test {
     NFT public nft;
