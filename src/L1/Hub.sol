@@ -40,9 +40,10 @@ contract Hub {
         isLocked[_owner] = false;
     }
 
-    function initiateAction(address _owner, address _target, bytes calldata _data, uint32 _minGasLimit) public {
-        require(!isActioned[_owner], "ALREADY_ACTIONED");
+    function initiateAction(address _target, bytes calldata _data, uint32 _minGasLimit) public {
+        require(!isActioned[msg.sender], "ALREADY_ACTIONED");
+        require(isLocked[msg.sender], "NOT_LOCKED");
         ICrossDomainMessenger(MESSENGER).sendMessage({_target: _target, _message: _data, _minGasLimit: _minGasLimit});
-        isActioned[_owner] = true;
+        isActioned[msg.sender] = true;
     }
 }
