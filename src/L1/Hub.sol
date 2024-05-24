@@ -14,6 +14,7 @@ contract Hub {
     address immutable UNLOCKER;
 
     mapping(uint256 => bool) public isLocked;
+    mapping(uint256 => bool) public isActioned;
 
     constructor(IVault _remoteVault, ICrossDomainMessenger _messenger, address _unlocker) {
         REMOTE_VAULT = _remoteVault;
@@ -37,5 +38,12 @@ contract Hub {
             _minGasLimit: _minGasLimit
         });
         isLocked[tokenId] = false;
+    }
+
+    function initiateAction(uint256 _tokenId, address _target, bytes calldata _data, uint32 _minGasLimit) public {
+        require(!isActioned[_tokenId], "ALREADY_ACTIONED");
+        require(msg.sender == address(MESSENGER), "ONLY_MESSENGER");
+        ICrossDomainMessenger(MESSENGER).sendMessage({_target: _target, _message: _data, _minGasLimit: _minGasLimit});
+        isActioned[_tokenId] = true;
     }
 }

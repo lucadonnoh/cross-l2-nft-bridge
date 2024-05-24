@@ -24,12 +24,12 @@ contract VaultTest is Test {
         vm.stopPrank();
         assertEq(nft.ownerOf(0), address(vaults));
 
-        (address owner, address unlocker,) = vaults.vaults(0);
-        assertEq(owner, bob);
+        (uint256 tokenId, address unlocker,) = vaults.vaults(bob);
+        assertEq(tokenId, 0);
         assertEq(unlocker, eve);
 
         vm.prank(eve);
-        vaults.withdraw(0);
+        vaults.withdraw(bob);
         assertEq(nft.ownerOf(0), bob);
     }
 
@@ -51,9 +51,9 @@ contract VaultTest is Test {
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
         vaults.deposit(0, eve);
-        vm.stopPrank();
         vm.expectRevert("VAULT_EXISTS");
         vaults.deposit(0, eve);
+        vm.stopPrank();
     }
 
     function test_notUnlockerCannotWithdraw() public {
@@ -66,26 +66,26 @@ contract VaultTest is Test {
         vm.stopPrank();
         vm.prank(bob);
         vm.expectRevert("NOT_UNLOCKER");
-        vaults.withdraw(0);
+        vaults.withdraw(bob);
     }
 
     function test_isLocked() public {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
-        assertEq(vaults.isLocked(0), false);
+        assertEq(vaults.isLocked(bob), false);
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
         vaults.deposit(0, makeAddr("eve"));
         vm.stopPrank();
-        assertEq(vaults.isLocked(0), true);
+        assertEq(vaults.isLocked(bob), true);
     }
 
     function test_isLockedWhenJustTransferred() public {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
-        assertEq(vaults.isLocked(0), false);
+        assertEq(vaults.isLocked(bob), false);
         vm.prank(bob);
         nft.transferFrom(bob, address(vaults), 0);
-        assertEq(vaults.isLocked(0), false);
+        assertEq(vaults.isLocked(bob), false);
     }
 }

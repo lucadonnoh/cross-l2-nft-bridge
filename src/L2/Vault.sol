@@ -12,12 +12,12 @@ contract NftVault {
     address immutable OWNER;
 
     struct Vault {
-        address owner;
+        uint256 tokenId;
         address unlocker;
         bool relayedToL1;
     }
 
-    mapping(uint256 => Vault) public vaults;
+    mapping(address => Vault) public vaults;
 
     constructor(address _nft) {
         NFT = ERC721(_nft);
@@ -35,46 +35,49 @@ contract NftVault {
     }
 
     function deposit(uint256 _tokenId, address _unlocker) external {
-        require(vaults[_tokenId].owner == address(0), "VAULT_EXISTS");
+        require(vaults[msg.sender].unlocker == address(0), "VAULT_EXISTS");
         require(NFT.ownerOf(_tokenId) == msg.sender, "NOT_OWNER");
-        vaults[_tokenId] = Vault(msg.sender, _unlocker, false);
+        require(_unlocker != address(0), "INVALID_UNLOCKER");
+        vaults[msg.sender] = Vault(_tokenId, _unlocker, false);
         NFT.transferFrom(msg.sender, address(this), _tokenId);
     }
 
-    function withdraw(uint256 _tokenId) external {
-        Vault memory vault = vaults[_tokenId];
+    function withdraw(address _owner) external {
+        Vault memory vault = vaults[_owner];
         require(vault.unlocker == msg.sender, "NOT_UNLOCKER");
-        delete vaults[_tokenId];
-        NFT.transferFrom(address(this), vault.owner, _tokenId);
+        require(!vault.relayedToL1, "RELAYED_TO_L1");
+        uint256 _tokenId = vault.tokenId;
+        delete vaults[_owner];
+        NFT.transferFrom(address(this), _owner, _tokenId);
     }
 
-    function isLocked(uint256 _tokenId) public view returns (bool) {
-        return NFT.ownerOf(_tokenId) == address(this) && vaults[_tokenId].owner != address(0);
+    function isLocked(address _owner) public view returns (bool) {
+        return vaults[_owner].unlocker != address(0);
     }
 
-    function initiateBridgeLock(uint256 _tokenId, uint32 _minGasLimit) public {
-        require(isLocked(_tokenId), "NOT_LOCKED");
-        require(!vaults[_tokenId].relayedToL1, "ALREADY_RELAYED");
-        require(vaults[_tokenId].owner == msg.sender, "NOT_OWNER");
-        require(vaults[_tokenId].unlocker == address(L1Hub), "HUB_NOT_UNLOCKER");
-        vaults[_tokenId].relayedToL1 = true;
+    function initiateBridgeLock(uint32 _minGasLimit) public {
+        require(isLocked(msg.sender), "NOT_LOCKED");
+        require(!vaults[msg.sender].relayedToL1, "ALREADY_RELAYED");
+        require(vaults[msg.sender].unlocker == address(L1Hub), "HUB_NOT_UNLOCKER");
+        vaults[msg.sender].relayedToL1 = true;
         IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).sendMessage({
             _target: address(L1Hub),
-            _message: abi.encodeWithSelector(L1Hub.finalizeBridgeLock.selector, _tokenId),
+            _message: abi.encodeWithSelector(L1Hub.finalizeBridgeLock.selector, msg.sender),
             _minGasLimit: _minGasLimit
         });
     }
 
-    function finalizeBridgeUnlock(uint256 _tokenId) external {
-        require(isLocked(_tokenId), "NOT_LOCKED");
-        Vault memory vault = vaults[_tokenId];
+    function finalizeBridgeUnlock(address _owner) external {
+        require(isLocked(_owner), "NOT_LOCKED");
+        Vault memory vault = vaults[_owner];
         require(vault.unlocker == address(L1Hub), "NOT_UNLOCKER");
         require(msg.sender == Predeploys.L2_CROSS_DOMAIN_MESSENGER, "ONLY_MESSENGER");
         require(
             IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).xDomainMessageSender() == address(L1Hub),
             "ONLY_L1_HUB"
         );
-        delete vaults[_tokenId];
-        NFT.transferFrom(address(this), vault.owner, _tokenId);
+        uint256 _tokenId = vault.tokenId;
+        delete vaults[_owner];
+        NFT.transferFrom(address(this), _owner, _tokenId);
     }
 }

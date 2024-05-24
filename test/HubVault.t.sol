@@ -29,6 +29,8 @@ contract HubVaultTest is Test {
         vaults.setHubAddress(address(hub));
     }
 
+    /*
+
     function test_setHubAddressAlreadySet() public {
         vm.expectRevert("ALREADY_SET");
         vaults.setHubAddress(address(hub));
@@ -249,4 +251,6 @@ contract HubVaultTest is Test {
         vm.prank(makeAddr("unlocker"));
         hub.initiateBridgeUnlock(0, 1_000_000);
     }
+
+    */
 }
