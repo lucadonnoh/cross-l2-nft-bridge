@@ -29,8 +29,6 @@ contract HubVaultTest is Test {
         vaults.setHubAddress(address(hub));
     }
 
-    /*
-
     function test_setHubAddressAlreadySet() public {
         vm.expectRevert("ALREADY_SET");
         vaults.setHubAddress(address(hub));
@@ -48,18 +46,18 @@ contract HubVaultTest is Test {
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
         vaults.deposit(0, address(hub));
-        (address owner, address unlocker, bool isRelayedToL1) = vaults.vaults(0);
-        assertEq(owner, bob);
+        (uint256 tokenId, address unlocker, bool isRelayedToL1) = vaults.vaults(bob);
+        assertEq(tokenId, 0);
         assertEq(unlocker, address(hub));
         assertEq(isRelayedToL1, false);
 
         vm.mockCall(
             address(MOCK_L2_MESSENGER), abi.encodeWithSelector(MOCK_L2_MESSENGER.sendMessage.selector), bytes("")
         );
-        vaults.initiateBridgeLock(0, 1_000_000);
-        (owner, unlocker, isRelayedToL1) = vaults.vaults(0);
+        vaults.initiateBridgeLock(1_000_000);
+        (tokenId, unlocker, isRelayedToL1) = vaults.vaults(bob);
         vm.stopPrank();
-        assertEq(owner, bob);
+        assertEq(tokenId, 0);
         assertEq(unlocker, address(hub));
         assertEq(isRelayedToL1, true);
     }
@@ -68,7 +66,7 @@ contract HubVaultTest is Test {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
         vm.expectRevert("NOT_LOCKED");
-        vaults.initiateBridgeLock(0, 1_000_000);
+        vaults.initiateBridgeLock(1_000_000);
     }
 
     function test_initiateBridgeLockAlreadyRelayed() public {
@@ -80,22 +78,10 @@ contract HubVaultTest is Test {
         vm.mockCall(
             address(MOCK_L2_MESSENGER), abi.encodeWithSelector(MOCK_L2_MESSENGER.sendMessage.selector), bytes("")
         );
-        vaults.initiateBridgeLock(0, 1_000_000);
+        vaults.initiateBridgeLock(1_000_000);
         vm.expectRevert("ALREADY_RELAYED");
-        vaults.initiateBridgeLock(0, 1_000_000);
+        vaults.initiateBridgeLock(1_000_000);
         vm.stopPrank();
-    }
-
-    function test_initiateBridgeLockNotOwner() public {
-        address bob = makeAddr("bob");
-        nft.mint(bob, "uri");
-        vm.startPrank(bob);
-        nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
-        vm.stopPrank();
-        vm.prank(makeAddr("eve"));
-        vm.expectRevert("NOT_OWNER");
-        vaults.initiateBridgeLock(0, 1_000_000);
     }
 
     function test_initiateBridgeLockHubNotUnlocker() public {
@@ -105,7 +91,7 @@ contract HubVaultTest is Test {
         nft.approve(address(vaults), 0);
         vaults.deposit(0, makeAddr("eve"));
         vm.expectRevert("HUB_NOT_UNLOCKER");
-        vaults.initiateBridgeLock(0, 1_000_000);
+        vaults.initiateBridgeLock(1_000_000);
         vm.stopPrank();
     }
 
@@ -124,10 +110,10 @@ contract HubVaultTest is Test {
         );
 
         vm.prank(address(MOCK_L2_MESSENGER));
-        vaults.finalizeBridgeUnlock(0);
+        vaults.finalizeBridgeUnlock(bob);
 
-        (address owner, address unlocker, bool isRelayedToL1) = vaults.vaults(0);
-        assertEq(owner, address(0));
+        (uint256 tokenId, address unlocker, bool isRelayedToL1) = vaults.vaults(bob);
+        assertEq(tokenId, 0);
         assertEq(unlocker, address(0));
         assertEq(isRelayedToL1, false);
         assertEq(nft.ownerOf(0), bob);
@@ -137,7 +123,7 @@ contract HubVaultTest is Test {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
         vm.expectRevert("NOT_LOCKED");
-        vaults.finalizeBridgeUnlock(0);
+        vaults.finalizeBridgeUnlock(bob);
     }
 
     function test_finalizeBridgeUnlockHubNotUnlocker() public {
@@ -148,7 +134,7 @@ contract HubVaultTest is Test {
         vaults.deposit(0, makeAddr("eve"));
         vm.stopPrank();
         vm.expectRevert("NOT_UNLOCKER");
-        vaults.finalizeBridgeUnlock(0);
+        vaults.finalizeBridgeUnlock(bob);
     }
 
     function test_finalizeBridgeUnlockCallerNotMessenger() public {
@@ -160,7 +146,7 @@ contract HubVaultTest is Test {
         vm.stopPrank();
         vm.prank(makeAddr("eve"));
         vm.expectRevert("ONLY_MESSENGER");
-        vaults.finalizeBridgeUnlock(0);
+        vaults.finalizeBridgeUnlock(bob);
     }
 
     function test_finalizeBridgeUnlockXDomainMessageSenderNotHub() public {
@@ -177,11 +163,12 @@ contract HubVaultTest is Test {
         );
         vm.prank(address(MOCK_L2_MESSENGER));
         vm.expectRevert("ONLY_L1_HUB");
-        vaults.finalizeBridgeUnlock(0);
+        vaults.finalizeBridgeUnlock(bob);
     }
 
     function test_finalizeBridgedLock() public {
-        assertEq(hub.isLocked(0), false);
+        address bob = makeAddr("bob");
+        assertEq(hub.isLocked(bob), false);
 
         vm.mockCall(
             address(MOCK_L1_MESSENGER),
@@ -190,17 +177,19 @@ contract HubVaultTest is Test {
         );
 
         vm.prank(address(MOCK_L1_MESSENGER));
-        hub.finalizeBridgeLock(0);
+        hub.finalizeBridgeLock(bob);
 
-        assertEq(hub.isLocked(0), true);
+        assertEq(hub.isLocked(bob), true);
     }
 
     function test_finalizeBridgedLockCallerNotMessenger() public {
+        address bob = makeAddr("bob");
         vm.expectRevert("ONLY_MESSENGER");
-        hub.finalizeBridgeLock(0);
+        hub.finalizeBridgeLock(bob);
     }
 
     function test_finalizeBridgeLockSenderNotVault() public {
+        address bob = makeAddr("bob");
         vm.mockCall(
             address(MOCK_L1_MESSENGER),
             abi.encodeWithSelector(MOCK_L1_MESSENGER.xDomainMessageSender.selector),
@@ -209,7 +198,7 @@ contract HubVaultTest is Test {
 
         vm.expectRevert("INVALID_SENDER");
         vm.prank(address(MOCK_L1_MESSENGER));
-        hub.finalizeBridgeLock(0);
+        hub.finalizeBridgeLock(bob);
     }
 
     function test_initiateBridgeUnlock() public {
@@ -221,13 +210,13 @@ contract HubVaultTest is Test {
             abi.encode(address(vaults))
         );
         vm.prank(address(MOCK_L1_MESSENGER));
-        hub.finalizeBridgeLock(0);
+        hub.finalizeBridgeLock(bob);
 
         vm.mockCall(
             address(MOCK_L1_MESSENGER), abi.encodeWithSelector(MOCK_L1_MESSENGER.sendMessage.selector), bytes("")
         );
         vm.prank(makeAddr("unlocker"));
-        hub.initiateBridgeUnlock(0, 1_000_000);
+        hub.initiateBridgeUnlock(bob, 1_000_000);
     }
 
     function test_initiateBridgeUnlockNotUnlocker() public {
@@ -239,18 +228,17 @@ contract HubVaultTest is Test {
             abi.encode(address(vaults))
         );
         vm.prank(address(MOCK_L1_MESSENGER));
-        hub.finalizeBridgeLock(0);
+        hub.finalizeBridgeLock(bob);
 
         vm.expectRevert("ONLY_UNLOCKER");
         vm.prank(makeAddr("eve"));
-        hub.initiateBridgeUnlock(0, 1_000_000);
+        hub.initiateBridgeUnlock(bob, 1_000_000);
     }
 
     function test_initiateBridgeUnlockNotLocked() public {
+        address bob = makeAddr("bob");
         vm.expectRevert("NOT_LOCKED");
         vm.prank(makeAddr("unlocker"));
-        hub.initiateBridgeUnlock(0, 1_000_000);
+        hub.initiateBridgeUnlock(bob, 1_000_000);
     }
-
-    */
 }
