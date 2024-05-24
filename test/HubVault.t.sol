@@ -95,6 +95,24 @@ contract HubVaultTest is Test {
         vm.stopPrank();
     }
 
+    function test_cannotWithdrawIfRelayed() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.deposit(0, address(hub));
+        vm.mockCall(
+            address(MOCK_L2_MESSENGER),
+            abi.encodeWithSelector(MOCK_L2_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(hub))
+        );
+        vaults.initiateBridgeLock(1_000_000);
+        vm.stopPrank();
+        vm.expectRevert("RELAYED_TO_L1");
+        vm.prank(address(hub));
+        vaults.withdraw(bob);
+    }
+
     function test_finalizeBridgeUnlock() public {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");

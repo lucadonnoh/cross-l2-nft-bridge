@@ -88,4 +88,12 @@ contract VaultTest is Test {
         nft.transferFrom(bob, address(vaults), 0);
         assertEq(vaults.isLocked(bob), false);
     }
+
+    function test_cannotSetZeroUnlocker() public {
+        address bob = makeAddr("bob");
+        nft.mint(bob, "uri");
+        vm.prank(bob);
+        vm.expectRevert("INVALID_UNLOCKER");
+        vaults.deposit(0, address(0));
+    }
 }
