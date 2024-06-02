@@ -10,29 +10,36 @@ interface ICrossDomainMessenger {
 
 contract Hub {
     IVault immutable REMOTE_VAULT;
-    ICrossDomainMessenger immutable MESSENGER;
-    address immutable UNLOCKER;
+    ICrossDomainMessenger immutable VAULT_MESSENGER;
+    ICrossDomainMessenger immutable APP_MESSENGER;
+    address public app;
 
     mapping(address => bool) public isLocked;
     mapping(address => bool) public isActioned;
 
-    constructor(IVault _remoteVault, ICrossDomainMessenger _messenger, address _unlocker) {
+    constructor(IVault _remoteVault, ICrossDomainMessenger _vaultMessenger, ICrossDomainMessenger _appMessenger) {
         REMOTE_VAULT = _remoteVault;
-        MESSENGER = _messenger;
-        UNLOCKER = _unlocker;
+        VAULT_MESSENGER = _vaultMessenger;
+        APP_MESSENGER = _appMessenger;
     }
 
-    function finalizeBridgeLock(address _owner) public {
-        require(msg.sender == address(MESSENGER), "ONLY_MESSENGER");
-        require(MESSENGER.xDomainMessageSender() == address(REMOTE_VAULT), "INVALID_SENDER");
+    function setAppAddress(address _app) external {
+        require(app == address(0), "ALREADY_SET");
+        app = _app;
+    }
+
+    function finalizeBridgeLock(address _owner) external {
+        require(msg.sender == address(VAULT_MESSENGER), "ONLY_MESSENGER");
+        require(VAULT_MESSENGER.xDomainMessageSender() == address(REMOTE_VAULT), "INVALID_SENDER");
         isLocked[_owner] = true;
         // call to other-L2 application
     }
 
-    function initiateBridgeUnlock(address _owner, uint32 _minGasLimit) public {
-        require(msg.sender == UNLOCKER, "ONLY_UNLOCKER"); // the UNLOCKER should be the other-L2 application
+    function initiateBridgeUnlock(address _owner, uint32 _minGasLimit) external {
+        require(msg.sender == address(APP_MESSENGER), "ONLY_UNLOCKER");
+        require(APP_MESSENGER.xDomainMessageSender() == app, "INVALID_SENDER");
         require(isLocked[_owner], "NOT_LOCKED");
-        ICrossDomainMessenger(MESSENGER).sendMessage({
+        VAULT_MESSENGER.sendMessage({
             _target: address(REMOTE_VAULT),
             _message: abi.encodeWithSignature("finalizeBridgeUnlock(uint256)", _owner),
             _minGasLimit: _minGasLimit
@@ -40,10 +47,10 @@ contract Hub {
         isLocked[_owner] = false;
     }
 
-    function initiateAction(address _target, bytes calldata _data, uint32 _minGasLimit) public {
+    function initiateAction(bytes calldata _data, uint32 _minGasLimit) public {
         require(!isActioned[msg.sender], "ALREADY_ACTIONED");
         require(isLocked[msg.sender], "NOT_LOCKED");
-        ICrossDomainMessenger(MESSENGER).sendMessage({_target: _target, _message: _data, _minGasLimit: _minGasLimit});
+        APP_MESSENGER.sendMessage({_target: app, _message: _data, _minGasLimit: _minGasLimit});
         isActioned[msg.sender] = true;
     }
 }

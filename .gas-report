@@ -1,0 +1,116 @@
+No files changed, compilation skipped
+
+Ran 7 tests for test/Vault.t.sol:VaultTest
+[PASS] test_cannotSetZeroUnlocker() (gas: 172344)
+[PASS] test_depositAlreadyDeposited() (gas: 301921)
+[PASS] test_depositNotOwner() (gas: 223863)
+[PASS] test_flow() (gas: 341291)
+[PASS] test_isLocked() (gas: 281219)
+[PASS] test_isLockedWhenJustTransferred() (gas: 205471)
+[PASS] test_notUnlockerCannotWithdraw() (gas: 304410)
+Suite result: ok. 7 passed; 0 failed; 0 skipped; finished in 15.21ms (6.78ms CPU time)
+
+Ran 20 tests for test/HubVaultApp.t.sol:HubVaultAppTest
+[PASS] test_cannotWithdrawIfRelayed() (gas: 339725)
+[PASS] test_finalizeBridgeLockSenderNotVault() (gas: 35537)
+[PASS] test_finalizeBridgeUnlock() (gas: 344761)
+[PASS] test_finalizeBridgeUnlockCallerNotMessenger() (gas: 308956)
+[PASS] test_finalizeBridgeUnlockHubNotUnlocker() (gas: 306439)
+[PASS] test_finalizeBridgeUnlockNotLocked() (gas: 166457)
+[PASS] test_finalizeBridgeUnlockXDomainMessageSenderNotHub() (gas: 310692)
+[PASS] test_finalizeBridgedLock() (gas: 61860)
+[PASS] test_finalizeBridgedLockCallerNotMessenger() (gas: 31713)
+[PASS] test_fullFlow() (gas: 565120)
+[PASS] test_initiateBridgeLock() (gas: 315334)
+[PASS] test_initiateBridgeLockAlreadyRelayed() (gas: 336622)
+[PASS] test_initiateBridgeLockHubNotUnlocker() (gas: 304149)
+[PASS] test_initiateBridgeLockWithoutDeposit() (gas: 166210)
+[PASS] test_initiateBridgeUnlock() (gas: 219113)
+[PASS] test_initiateBridgeUnlockNotLocked() (gas: 40507)
+[PASS] test_initiateBridgeUnlockNotUnlocker() (gas: 215284)
+[PASS] test_initiateBridgeUnlockXSenderIsNotApp() (gas: 218994)
+[PASS] test_setHubAddressAlreadySet() (gas: 34396)
+[PASS] test_setHubNotOwner() (gas: 34344)
+Suite result: ok. 20 passed; 0 failed; 0 skipped; finished in 36.97ms (5.33ms CPU time)
+
+Ran 2 tests for test/NFT.t.sol:NftHarnessTest
+[PASS] test_increaseBalance() (gas: 30790)
+[PASS] test_update(address) (runs: 257, μ: 197260, ~: 197337)
+Suite result: ok. 2 passed; 0 failed; 0 skipped; finished in 38.88ms (33.09ms CPU time)
+
+Ran 8 tests for test/NFT.t.sol:NftTest
+[PASS] testFuzz_mint(uint256) (runs: 257, μ: 16468945, ~: 17447203)
+[PASS] testFuzz_mintNotDeployer(address) (runs: 257, μ: 34772, ~: 34772)
+[PASS] testFuzz_notDeployerCannotAddMinter(address) (runs: 257, μ: 33830, ~: 33913)
+[PASS] testFuzz_tokenUri(string) (runs: 257, μ: 161183, ~: 182470)
+[PASS] test_addMinter() (gas: 188787)
+[PASS] test_mint100() (gas: 17312628)
+[PASS] test_mint101() (gas: 17341339)
+[PASS] test_supportsInterface() (gas: 6185)
+Suite result: ok. 8 passed; 0 failed; 0 skipped; finished in 1.55s (1.62s CPU time)
+| src/L1/Hub.sol:Hub contract |                 |       |        |       |         |
+|-----------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost             | Deployment Size |       |        |       |         |
+| 569714                      | 2739            |       |        |       |         |
+| Function Name               | min             | avg   | median | max   | # calls |
+| finalizeBridgeLock          | 21925           | 38127 | 44513  | 44513 | 7       |
+| initiateAction              | 52402           | 52402 | 52402  | 52402 | 1       |
+| initiateBridgeUnlock        | 22124           | 26204 | 26968  | 28586 | 5       |
+| isLocked                    | 537             | 1537  | 1537   | 2537  | 2       |
+| setAppAddress               | 44057           | 44057 | 44057  | 44057 | 20      |
+
+
+| src/L2/App.sol:App contract |                 |       |        |       |         |
+|-----------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost             | Deployment Size |       |        |       |         |
+| 314529                      | 1390            |       |        |       |         |
+| Function Name               | min             | avg   | median | max   | # calls |
+| gatedHello                  | 47770           | 47770 | 47770  | 47770 | 1       |
+| setHubAddress               | 44079           | 44079 | 44079  | 44079 | 20      |
+
+
+| src/L2/NFT.sol:NFT contract |                 |        |        |        |         |
+|-----------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost             | Deployment Size |        |        |        |         |
+| 1645405                     | 7728            |        |        |        |         |
+| Function Name               | min             | avg    | median | max    | # calls |
+| addMinter                   | 24086           | 24327  | 24314  | 48852  | 257     |
+| approve                     | 48679           | 48679  | 48679  | 48679  | 14      |
+| balanceOf                   | 634             | 1160   | 634    | 2634   | 19      |
+| mint                        | 25064           | 169264 | 172875 | 195198 | 25135   |
+| ownerOf                     | 576             | 2076   | 2576   | 2576   | 20      |
+| supportsInterface           | 867             | 867    | 867    | 867    | 1       |
+| tokenURI                    | 1607            | 1999   | 2135   | 2358   | 256     |
+| totalSupply                 | 393             | 413    | 393    | 2393   | 24419   |
+| transferFrom                | 63390           | 63390  | 63390  | 63390  | 1       |
+
+
+| src/L2/Vault.sol:NftVault contract |                 |       |        |       |         |
+|------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                    | Deployment Size |       |        |       |         |
+| 699521                             | 3194            |       |        |       |         |
+| Function Name                      | min             | avg   | median | max   | # calls |
+| deposit                            | 24218           | 80529 | 92686  | 92686 | 16      |
+| finalizeBridgeUnlock               | 24086           | 42432 | 28966  | 71972 | 6       |
+| initiateBridgeLock                 | 23801           | 29399 | 32897  | 32897 | 7       |
+| isLocked                           | 598             | 1598  | 1598   | 2598  | 4       |
+| setHubAddress                      | 21969           | 42242 | 44163  | 44163 | 22      |
+| vaults                             | 785             | 785   | 785    | 785   | 4       |
+| withdraw                           | 26360           | 40613 | 26389  | 69092 | 3       |
+
+
+| test/NFT.t.sol:NftHarness contract |                 |        |        |        |         |
+|------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                    | Deployment Size |        |        |        |         |
+| 1714294                            | 7962            |        |        |        |         |
+| Function Name                      | min             | avg    | median | max    | # calls |
+| balanceOf                          | 657             | 657    | 657    | 657    | 1       |
+| exposed_increaseBalance            | 24453           | 24453  | 24453  | 24453  | 1       |
+| exposed_update                     | 63102           | 63253  | 63330  | 63330  | 256     |
+| mint                               | 127520          | 127520 | 127520 | 127520 | 256     |
+| ownerOf                            | 599             | 599    | 599    | 599    | 512     |
+
+
+
+
+Ran 4 test suites in 1.63s (1.64s CPU time): 37 tests passed, 0 failed, 0 skipped (37 total tests)

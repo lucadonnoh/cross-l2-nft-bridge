@@ -10,6 +10,7 @@ contract NftVault {
     ERC721 public immutable NFT;
     IHub public L1Hub;
     address immutable OWNER;
+    address[] public toBatchBridge;
 
     struct Vault {
         uint256 tokenId;
@@ -34,12 +35,17 @@ contract NftVault {
         L1Hub = IHub(hubAddress);
     }
 
-    function deposit(uint256 _tokenId, address _unlocker) external {
+    function deposit(uint256 _tokenId, address _unlocker) public {
         require(vaults[msg.sender].unlocker == address(0), "VAULT_EXISTS");
         require(NFT.ownerOf(_tokenId) == msg.sender, "NOT_OWNER");
         require(_unlocker != address(0), "INVALID_UNLOCKER");
         vaults[msg.sender] = Vault(_tokenId, _unlocker, false);
         NFT.transferFrom(msg.sender, address(this), _tokenId);
+    }
+
+    function depositAndEnqueue(uint256 _tokenId, address _unlocker) external {
+        deposit(_tokenId, _unlocker);
+        toBatchBridge.push(msg.sender);
     }
 
     function withdraw(address _owner) external {
