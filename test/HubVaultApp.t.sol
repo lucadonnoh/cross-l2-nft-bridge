@@ -53,11 +53,11 @@ contract HubVaultAppTest is Test {
         nft.mint(bob, "uri");
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
-        (uint256 tokenId, address unlocker, bool isRelayedToL1) = vaults.vaults(bob);
+        vaults.deposit(0);
+        (uint256 tokenId, bool isRelayedToL1, bool isLocked) = vaults.vaults(bob);
         assertEq(tokenId, 0);
-        assertEq(unlocker, address(hub));
         assertEq(isRelayedToL1, false);
+        assertEq(isLocked, true);
 
         vm.mockCall(
             address(MOCK_VAULT_L2_MESSENGER),
@@ -65,11 +65,11 @@ contract HubVaultAppTest is Test {
             bytes("")
         );
         vaults.initiateBridgeLock(1_000_000);
-        (tokenId, unlocker, isRelayedToL1) = vaults.vaults(bob);
+        (tokenId, isRelayedToL1, isLocked) = vaults.vaults(bob);
         vm.stopPrank();
         assertEq(tokenId, 0);
-        assertEq(unlocker, address(hub));
         assertEq(isRelayedToL1, true);
+        assertEq(isLocked, true);
     }
 
     function test_initiateBridgeLockWithoutDeposit() public {
@@ -84,7 +84,7 @@ contract HubVaultAppTest is Test {
         nft.mint(bob, "uri");
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
+        vaults.deposit(0);
         vm.mockCall(
             address(MOCK_VAULT_L2_MESSENGER),
             abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.sendMessage.selector),
@@ -96,41 +96,12 @@ contract HubVaultAppTest is Test {
         vm.stopPrank();
     }
 
-    function test_initiateBridgeLockHubNotUnlocker() public {
-        address bob = makeAddr("bob");
-        nft.mint(bob, "uri");
-        vm.startPrank(bob);
-        nft.approve(address(vaults), 0);
-        vaults.deposit(0, makeAddr("eve"));
-        vm.expectRevert("HUB_NOT_UNLOCKER");
-        vaults.initiateBridgeLock(1_000_000);
-        vm.stopPrank();
-    }
-
-    function test_cannotWithdrawIfRelayed() public {
-        address bob = makeAddr("bob");
-        nft.mint(bob, "uri");
-        vm.startPrank(bob);
-        nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
-        vm.mockCall(
-            address(MOCK_VAULT_L2_MESSENGER),
-            abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.xDomainMessageSender.selector),
-            abi.encode(address(hub))
-        );
-        vaults.initiateBridgeLock(1_000_000);
-        vm.stopPrank();
-        vm.expectRevert("RELAYED_TO_L1");
-        vm.prank(address(hub));
-        vaults.withdraw(bob);
-    }
-
     function test_finalizeBridgeUnlock() public {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
+        vaults.deposit(0);
         vm.stopPrank();
 
         vm.mockCall(
@@ -142,10 +113,10 @@ contract HubVaultAppTest is Test {
         vm.prank(address(MOCK_VAULT_L2_MESSENGER));
         vaults.finalizeBridgeUnlock(bob);
 
-        (uint256 tokenId, address unlocker, bool isRelayedToL1) = vaults.vaults(bob);
+        (uint256 tokenId, bool isRelayedToL1, bool isLocked) = vaults.vaults(bob);
         assertEq(tokenId, 0);
-        assertEq(unlocker, address(0));
         assertEq(isRelayedToL1, false);
+        assertEq(isLocked, false);
         assertEq(nft.ownerOf(0), bob);
     }
 
@@ -156,23 +127,12 @@ contract HubVaultAppTest is Test {
         vaults.finalizeBridgeUnlock(bob);
     }
 
-    function test_finalizeBridgeUnlockHubNotUnlocker() public {
-        address bob = makeAddr("bob");
-        nft.mint(bob, "uri");
-        vm.startPrank(bob);
-        nft.approve(address(vaults), 0);
-        vaults.deposit(0, makeAddr("eve"));
-        vm.stopPrank();
-        vm.expectRevert("NOT_UNLOCKER");
-        vaults.finalizeBridgeUnlock(bob);
-    }
-
     function test_finalizeBridgeUnlockCallerNotMessenger() public {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
+        vaults.deposit(0);
         vm.stopPrank();
         vm.prank(makeAddr("eve"));
         vm.expectRevert("ONLY_MESSENGER");
@@ -184,7 +144,7 @@ contract HubVaultAppTest is Test {
         nft.mint(bob, "uri");
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub));
+        vaults.deposit(0);
         vm.stopPrank();
         vm.mockCall(
             address(MOCK_VAULT_L2_MESSENGER),
@@ -299,7 +259,7 @@ contract HubVaultAppTest is Test {
         nft.mint(bob, "uri"); // step 1 done
         vm.startPrank(bob);
         nft.approve(address(vaults), 0);
-        vaults.deposit(0, address(hub)); // step 2 done
+        vaults.deposit(0); // step 2 done
         assertNotEq(nft.ownerOf(0), bob);
         vm.mockCall(
             address(MOCK_VAULT_L2_MESSENGER),
