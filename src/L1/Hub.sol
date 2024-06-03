@@ -17,6 +17,9 @@ contract Hub {
     mapping(address => bool) public isLocked;
     mapping(address => bool) public isActioned;
 
+    mapping(bytes32 => bool) public isBatchLocked;
+    mapping(bytes32 => bool) public isBatchActioned;
+
     constructor(IVault _remoteVault, ICrossDomainMessenger _vaultMessenger, ICrossDomainMessenger _appMessenger) {
         REMOTE_VAULT = _remoteVault;
         VAULT_MESSENGER = _vaultMessenger;
@@ -32,7 +35,12 @@ contract Hub {
         require(msg.sender == address(VAULT_MESSENGER), "ONLY_MESSENGER");
         require(VAULT_MESSENGER.xDomainMessageSender() == address(REMOTE_VAULT), "INVALID_SENDER");
         isLocked[_owner] = true;
-        // call to other-L2 application
+    }
+
+    function finalizeBatchBridgeLock(bytes32 hashedAddresses) external {
+        require(msg.sender == address(VAULT_MESSENGER), "ONLY_MESSENGER");
+        require(VAULT_MESSENGER.xDomainMessageSender() == address(REMOTE_VAULT), "INVALID_SENDER");
+        isBatchLocked[hashedAddresses] = true;
     }
 
     function initiateBridgeUnlock(address _owner, uint32 _minGasLimit) external {
@@ -47,10 +55,29 @@ contract Hub {
         isLocked[_owner] = false;
     }
 
+    function initiateBatchBridgeUnlock(bytes32 _hashedAddresses, uint32 _minGasLimit) external {
+        require(msg.sender == address(APP_MESSENGER), "ONLY_UNLOCKER");
+        require(APP_MESSENGER.xDomainMessageSender() == app, "INVALID_SENDER");
+        require(isBatchLocked[_hashedAddresses], "NOT_LOCKED");
+        VAULT_MESSENGER.sendMessage({
+            _target: address(REMOTE_VAULT),
+            _message: abi.encodeWithSignature("finalizeBatchBridgeUnlock()"),
+            _minGasLimit: _minGasLimit
+        });
+        isBatchLocked[_hashedAddresses] = false;
+    }
+
     function initiateAction(bytes calldata _data, uint32 _minGasLimit) public {
         require(!isActioned[msg.sender], "ALREADY_ACTIONED");
         require(isLocked[msg.sender], "NOT_LOCKED");
         APP_MESSENGER.sendMessage({_target: app, _message: _data, _minGasLimit: _minGasLimit});
         isActioned[msg.sender] = true;
+    }
+
+    function initiateBatchAction(bytes32 _hashedAddresses, bytes calldata _data, uint32 _minGasLimit) external {
+        require(!isBatchActioned[_hashedAddresses], "ALREADY_ACTIONED");
+        require(isBatchLocked[_hashedAddresses], "NOT_LOCKED");
+        APP_MESSENGER.sendMessage({_target: app, _message: _data, _minGasLimit: _minGasLimit});
+        isBatchActioned[_hashedAddresses] = true;
     }
 }

@@ -62,6 +62,15 @@ contract NftVault {
         });
     }
 
+    function initiateBatchBridgeLock(uint32 _minGasLimit) external {
+        bytes32 hashedAddresses = keccak256(abi.encode(toBatchBridge));
+        IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).sendMessage({
+            _target: address(L1Hub),
+            _message: abi.encodeWithSelector(L1Hub.finalizeBatchBridgeLock.selector, hashedAddresses),
+            _minGasLimit: _minGasLimit
+        });
+    }
+
     function finalizeBridgeUnlock(address _owner) external {
         require(isLocked(_owner), "NOT_LOCKED");
         Vault memory vault = vaults[_owner];
@@ -73,5 +82,22 @@ contract NftVault {
         uint256 _tokenId = vault.tokenId;
         delete vaults[_owner];
         NFT.transferFrom(address(this), _owner, _tokenId);
+    }
+
+    function finalizeBatchBridgeUnlock() external {
+        require(msg.sender == Predeploys.L2_CROSS_DOMAIN_MESSENGER, "ONLY_MESSENGER");
+        require(
+            IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).xDomainMessageSender() == address(L1Hub),
+            "ONLY_L1_HUB"
+        );
+        for (uint256 i = 0; i < toBatchBridge.length; i++) {
+            address _owner = toBatchBridge[i];
+            require(isLocked(_owner), "NOT_LOCKED");
+            Vault memory vault = vaults[_owner];
+            uint256 _tokenId = vault.tokenId;
+            delete vaults[_owner];
+            NFT.transferFrom(address(this), _owner, _tokenId);
+        }
+        delete toBatchBridge;
     }
 }

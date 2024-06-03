@@ -321,6 +321,97 @@ contract HubVaultAppTest is Test {
         vm.resumeGasMetering();
     }
 
+    function test_fullBatchFlow() public {
+        // 1. mint nft
+        // 2. lock in vault
+        // 3. initiate send bridge lock to hub
+        // 4. finalize bridge lock
+        // 5. initiate action on hub
+        // 6. finalize action on app
+        // 7. initiate batch bridge unlock on hub
+        // 8. finalize batch bridge unlock on vault
+        // 9. check that original owner has nft
+        vm.pauseGasMetering();
+        address bob = makeAddr("bob");
+        address eve = makeAddr("eve");
+        address[] memory owners = new address[](2);
+        owners[0] = bob;
+        owners[1] = eve;
+        bytes32 hashedAddresses = keccak256(abi.encode(owners));
+        nft.mint(bob, "uri"); // step 1 done
+        nft.mint(eve, "uri"); // step 1 done
+        vm.startPrank(bob);
+        nft.approve(address(vaults), 0);
+        vaults.depositAndEnqueue(0); // step 2 done
+        vm.stopPrank();
+        vm.startPrank(eve);
+        nft.approve(address(vaults), 1);
+        vaults.depositAndEnqueue(1); // step 2 done
+        vm.stopPrank();
+        assertNotEq(nft.ownerOf(0), bob);
+        assertNotEq(nft.ownerOf(1), eve);
+        vm.mockCall(
+            address(MOCK_VAULT_L2_MESSENGER),
+            abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.sendMessage.selector),
+            bytes("")
+        );
+        vaults.initiateBatchBridgeLock(1_000_000); // step 3 done
+        vm.resumeGasMetering();
+        vm.mockCall(
+            address(MOCK_VAULT_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_VAULT_L1_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(vaults))
+        );
+        vm.prank(address(MOCK_VAULT_L1_MESSENGER));
+        hub.finalizeBatchBridgeLock(hashedAddresses); // step 4 done
+        vm.mockCall(
+            address(MOCK_APP_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_APP_L1_MESSENGER.sendMessage.selector),
+            bytes("")
+        );
+        hub.initiateBatchAction(
+            hashedAddresses, abi.encodeWithSelector(app.saveBatch.selector, hashedAddresses), 1_000_000
+        ); // step 5 done
+        vm.mockCall(
+            address(MOCK_APP_L2_MESSENGER),
+            abi.encodeWithSelector(MOCK_APP_L2_MESSENGER.sendMessage.selector),
+            bytes("")
+        );
+        vm.mockCall(
+            address(MOCK_APP_L2_MESSENGER),
+            abi.encodeWithSelector(MOCK_APP_L2_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(hub))
+        );
+        vm.prank(address(MOCK_APP_L2_MESSENGER));
+        vm.pauseGasMetering();
+        app.saveBatch(hashedAddresses);
+        app.batchGatedHello(owners);
+        vm.mockCall(
+            address(MOCK_APP_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_APP_L1_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(app))
+        );
+        vm.mockCall(
+            address(MOCK_VAULT_L1_MESSENGER),
+            abi.encodeWithSelector(MOCK_VAULT_L1_MESSENGER.sendMessage.selector),
+            bytes("")
+        );
+        vm.prank(address(MOCK_APP_L1_MESSENGER));
+        vm.resumeGasMetering();
+        hub.initiateBatchBridgeUnlock(hashedAddresses, 1_000_000); // step 7 done
+        vm.mockCall(
+            address(MOCK_VAULT_L2_MESSENGER),
+            abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.xDomainMessageSender.selector),
+            abi.encode(address(hub))
+        );
+        vm.prank(address(MOCK_VAULT_L2_MESSENGER));
+        vm.pauseGasMetering();
+        vaults.finalizeBatchBridgeUnlock();
+        assertEq(nft.ownerOf(0), bob); // step 9 done
+        assertEq(nft.ownerOf(1), eve); // step 9 done
+        vm.resumeGasMetering();
+    }
+
     function test_initiateBridgeUnlockXSenderIsNotApp() public {
         address bob = makeAddr("bob");
         nft.mint(bob, "uri");
