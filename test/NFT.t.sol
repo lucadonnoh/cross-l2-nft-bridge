@@ -107,6 +107,7 @@ contract NftHarnessTest is Test {
     }
 
     function test_update(address _to) public {
+        vm.assume(_to != address(0));
         nft.mint(address(this), "uri");
         assertEq(nft.ownerOf(0), address(this));
         nft.exposed_update(_to, 0, address(this));
