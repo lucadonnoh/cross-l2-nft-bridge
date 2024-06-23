@@ -49,7 +49,7 @@ contract Hub {
         require(isLocked[_owner], "NOT_LOCKED");
         VAULT_MESSENGER.sendMessage({
             _target: address(REMOTE_VAULT),
-            _message: abi.encodeWithSignature("finalizeBridgeUnlock(uint256)", _owner),
+            _message: abi.encodeWithSignature("finalizeBridgeUnlock(address)", _owner),
             _minGasLimit: _minGasLimit
         });
         isLocked[_owner] = false;
