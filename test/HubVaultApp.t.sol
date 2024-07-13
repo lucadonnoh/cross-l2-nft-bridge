@@ -7,6 +7,7 @@ import {NftVault} from "./../src/L2/Vault.sol";
 import {Hub, ICrossDomainMessenger} from "./../src/L1/Hub.sol";
 import {IL2CrossDomainMessenger} from "./../src/L2/IL2CrossDomainMessenger.sol";
 import {IVault} from "./../src/L2/IVault.sol";
+import {IApp} from "./../src/L1/Hub.sol";
 import {App} from "./../src/L2/App.sol";
 
 contract HubVaultAppTest is Test {
@@ -34,7 +35,7 @@ contract HubVaultAppTest is Test {
         vaults.setHubAddress(address(hub)); // L2
         app = new App(MOCK_APP_L2_MESSENGER); // L2
         app.setHubAddress(address(hub)); // L2
-        hub.setAppAddress(address(app)); // L1
+        hub.setAppAddress(IApp(address(app))); // L1
     }
 
     function test_setHubAddressAlreadySet() public {
@@ -282,7 +283,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_APP_L1_MESSENGER.sendMessage.selector),
             bytes("")
         );
-        hub.initiateAction(abi.encodeWithSelector(app.gatedHello.selector, bob), 1_000_000); // step 5 done
+        hub.initiateAction(1_000_000); // step 5 done
         vm.mockCall(
             address(MOCK_APP_L2_MESSENGER),
             abi.encodeWithSelector(MOCK_APP_L2_MESSENGER.sendMessage.selector),
@@ -369,9 +370,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_APP_L1_MESSENGER.sendMessage.selector),
             bytes("")
         );
-        hub.initiateBatchAction(
-            hashedAddresses, abi.encodeWithSelector(app.saveBatch.selector, hashedAddresses), 1_000_000
-        ); // step 5 done
+        hub.initiateBatchAction(hashedAddresses, 1_000_000); // step 5 done
         vm.mockCall(
             address(MOCK_APP_L2_MESSENGER),
             abi.encodeWithSelector(MOCK_APP_L2_MESSENGER.sendMessage.selector),
