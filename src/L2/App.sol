@@ -6,13 +6,14 @@ import "./IL2CrossDomainMessenger.sol";
 
 contract App {
     IHub public L1Hub;
-    IL2CrossDomainMessenger immutable MESSENGER;
+    IL2CrossDomainMessenger immutable L2_MESSENGER;
+    address constant ALIASED_L1_MESSENGER = 0xac910c1E8B61aA9D141bCD317dde7849F7A054f6; // Aliased Mode Sepolia L1CrossDomainMessenger
 
     mapping(address => bool) public hasHelloed;
     bytes32 public hashedAddresses;
 
     constructor(IL2CrossDomainMessenger _messenger) {
-        MESSENGER = _messenger;
+        L2_MESSENGER = _messenger;
     }
 
     function setHubAddress(address _l1Hub) external {
@@ -21,10 +22,10 @@ contract App {
     }
 
     function gatedHello(address _owner) public {
-        require(msg.sender == address(MESSENGER), "ONLY_MESSENGER");
-        require(MESSENGER.xDomainMessageSender() == address(L1Hub), "INVALID_SENDER");
+        require(msg.sender == address(ALIASED_L1_MESSENGER), "ONLY_MESSENGER");
+        require(L2_MESSENGER.xDomainMessageSender() == address(L1Hub), "INVALID_SENDER");
         _hello(_owner);
-        MESSENGER.sendMessage({
+        L2_MESSENGER.sendMessage({
             _target: address(L1Hub),
             _message: abi.encodeWithSignature("initiateBridgeUnlock(address,uint256)", _owner, 5_000_000),
             _minGasLimit: 5_000_000
@@ -32,8 +33,8 @@ contract App {
     }
 
     function saveBatch(bytes32 _hashedAddresses) public {
-        require(msg.sender == address(MESSENGER), "ONLY_MESSENGER");
-        require(MESSENGER.xDomainMessageSender() == address(L1Hub), "INVALID_SENDER");
+        require(msg.sender == address(ALIASED_L1_MESSENGER), "ONLY_MESSENGER");
+        require(L2_MESSENGER.xDomainMessageSender() == address(L1Hub), "INVALID_SENDER");
         hashedAddresses = _hashedAddresses;
     }
 
@@ -44,7 +45,7 @@ contract App {
         for (uint256 i = 0; i < _owners.length; i++) {
             _hello(_owners[i]);
         }
-        MESSENGER.sendMessage({
+        L2_MESSENGER.sendMessage({
             _target: address(L1Hub),
             _message: abi.encodeWithSignature("initiateBatchBridgeUnlock(bytes32,uint256)", _hashedAddresses, 5_000_000),
             _minGasLimit: 5_000_000

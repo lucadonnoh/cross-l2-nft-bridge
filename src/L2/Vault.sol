@@ -11,6 +11,7 @@ contract NftVault {
     IHub public L1Hub;
     address immutable OWNER;
     address[] public toBatchBridge;
+    address constant ALIASED_L1_MESSENGER = 0xC34855F4De64F1840e5686e64278da901e261f20; // Aliased Base Sepolia L1CrossDomainMessenger
 
     struct Vault {
         uint256 tokenId;
@@ -74,7 +75,7 @@ contract NftVault {
     function finalizeBridgeUnlock(address _owner) external {
         require(isLocked(_owner), "NOT_LOCKED");
         Vault memory vault = vaults[_owner];
-        require(msg.sender == Predeploys.L2_CROSS_DOMAIN_MESSENGER, "ONLY_MESSENGER");
+        require(msg.sender == ALIASED_L1_MESSENGER, "ONLY_MESSENGER");
         require(
             IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).xDomainMessageSender() == address(L1Hub),
             "ONLY_L1_HUB"
@@ -85,7 +86,7 @@ contract NftVault {
     }
 
     function finalizeBatchBridgeUnlock() external {
-        require(msg.sender == Predeploys.L2_CROSS_DOMAIN_MESSENGER, "ONLY_MESSENGER");
+        require(msg.sender == ALIASED_L1_MESSENGER, "ONLY_MESSENGER");
         require(
             IL2CrossDomainMessenger(Predeploys.L2_CROSS_DOMAIN_MESSENGER).xDomainMessageSender() == address(L1Hub),
             "ONLY_L1_HUB"

@@ -21,6 +21,8 @@ contract HubVaultAppTest is Test {
         IL2CrossDomainMessenger(address(0x4200000000000000000000000000000000000007));
     IL2CrossDomainMessenger constant MOCK_APP_L2_MESSENGER =
         IL2CrossDomainMessenger(address(0x4200000000000000000000000000000000000007));
+    address constant ALIASED_BASE_L1_MESSENGER = address(0xC34855F4De64F1840e5686e64278da901e261f20); // to be used with vault
+    address constant ALIASED_MODE_L1_MESSENGER = address(0xac910c1E8B61aA9D141bCD317dde7849F7A054f6); // to be used with app
 
     struct Vault {
         address owner;
@@ -111,7 +113,7 @@ contract HubVaultAppTest is Test {
             abi.encode(address(hub))
         );
 
-        vm.prank(address(MOCK_VAULT_L2_MESSENGER));
+        vm.prank(address(ALIASED_BASE_L1_MESSENGER));
         vaults.finalizeBridgeUnlock(bob);
 
         (uint256 tokenId, bool isRelayedToL1, bool isLocked) = vaults.vaults(bob);
@@ -152,7 +154,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.xDomainMessageSender.selector),
             abi.encode(makeAddr("eve"))
         );
-        vm.prank(address(MOCK_VAULT_L2_MESSENGER));
+        vm.prank(address(ALIASED_BASE_L1_MESSENGER));
         vm.expectRevert("ONLY_L1_HUB");
         vaults.finalizeBridgeUnlock(bob);
     }
@@ -294,7 +296,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_APP_L2_MESSENGER.xDomainMessageSender.selector),
             abi.encode(address(hub))
         );
-        vm.prank(address(MOCK_APP_L2_MESSENGER));
+        vm.prank(address(ALIASED_MODE_L1_MESSENGER));
         vm.pauseGasMetering();
         app.gatedHello(bob); // step 6 done
         vm.mockCall(
@@ -315,7 +317,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.xDomainMessageSender.selector),
             abi.encode(address(hub))
         );
-        vm.prank(address(MOCK_VAULT_L2_MESSENGER));
+        vm.prank(address(ALIASED_BASE_L1_MESSENGER));
         vm.pauseGasMetering();
         vaults.finalizeBridgeUnlock(bob); // step 8 done
         assertEq(nft.ownerOf(0), bob); // step 9 done
@@ -381,7 +383,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_APP_L2_MESSENGER.xDomainMessageSender.selector),
             abi.encode(address(hub))
         );
-        vm.prank(address(MOCK_APP_L2_MESSENGER));
+        vm.prank(address(ALIASED_MODE_L1_MESSENGER));
         vm.pauseGasMetering();
         app.saveBatch(hashedAddresses);
         app.batchGatedHello(owners);
@@ -403,7 +405,7 @@ contract HubVaultAppTest is Test {
             abi.encodeWithSelector(MOCK_VAULT_L2_MESSENGER.xDomainMessageSender.selector),
             abi.encode(address(hub))
         );
-        vm.prank(address(MOCK_VAULT_L2_MESSENGER));
+        vm.prank(address(ALIASED_BASE_L1_MESSENGER));
         vm.pauseGasMetering();
         vaults.finalizeBatchBridgeUnlock();
         assertEq(nft.ownerOf(0), bob); // step 9 done
