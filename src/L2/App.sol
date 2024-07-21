@@ -27,7 +27,7 @@ contract App {
         _hello(_owner);
         L2_MESSENGER.sendMessage({
             _target: address(L1Hub),
-            _message: abi.encodeWithSignature("initiateBridgeUnlock(address,uint256)", _owner, 5_000_000),
+            _message: abi.encodeWithSignature("initiateBridgeUnlock(address,uint32)", _owner, 1_000_000),
             _minGasLimit: 5_000_000
         });
     }
@@ -47,7 +47,7 @@ contract App {
         }
         L2_MESSENGER.sendMessage({
             _target: address(L1Hub),
-            _message: abi.encodeWithSignature("initiateBatchBridgeUnlock(bytes32,uint256)", _hashedAddresses, 5_000_000),
+            _message: abi.encodeWithSignature("initiateBatchBridgeUnlock(bytes32,uint32)", _hashedAddresses, 1_000_000),
             _minGasLimit: 5_000_000
         });
         hashedAddresses = 0x0;
